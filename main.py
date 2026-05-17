@@ -43,7 +43,18 @@ def plot_coincidence_events(taus: np.ndarray, bins: int) -> None:
 
 
 if __name__ == "__main__":
+    """
+    # single photon emission at 90% efficiency, 10ns lifetime and 100ns time between pulse
     detection_times = calc_detection_times(10000, 0.90, 10, 100)
+    detectors = split_detections(detection_times)
+    taus = calc_taus(detectors, 500)
+    plot_coincidence_events(taus, 500)
+    """
+
+    # two single photon emitters at 90% efficiency, 10ns lifetime and 100ns time between pulse
+    first_emitter_times = calc_detection_times(5000, 0.90, 10, 100)
+    second_emitter_times = calc_detection_times(5000, 0.90, 10, 100)
+    detection_times = np.sort(np.concat([first_emitter_times, second_emitter_times]))
     detectors = split_detections(detection_times)
     taus = calc_taus(detectors, 500)
     plot_coincidence_events(taus, 500)
