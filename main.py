@@ -43,18 +43,29 @@ def plot_coincidence_events(taus: np.ndarray, bins: int) -> None:
 
 
 if __name__ == "__main__":
-    """
-    # single photon emission at 90% efficiency, 10ns lifetime and 100ns time between pulse
-    detection_times = calc_detection_times(10000, 0.90, 10, 100)
-    detectors = split_detections(detection_times)
-    taus = calc_taus(detectors, 500)
-    plot_coincidence_events(taus, 500)
-    """
+    num = 2.2
+    match num:
+        case 1:
+            # single photon emission at 100% efficiency, 5ns lifetime and 1000ns time between pulse
+            detection_times = calc_detection_times(10000, 1, 5, 1000)
+        case 2:
+            # two single photon emitters at 100% efficiency, 5ns lifetime and 1000ns time between pulse
+            first_emitter_times = calc_detection_times(5000, 1, 5, 1000)
+            second_emitter_times = calc_detection_times(5000, 1, 5, 1000)
+        case 2.1:
+            # one single photon emitter at 100% efficiency, another at 50% efficiency, both with 5ns lifetime and 1000ns time between pulse
+            first_emitter_times = calc_detection_times(5000, 0.5, 5, 1000)
+            second_emitter_times = calc_detection_times(5000, 1, 5, 1000)
+        case 2.2:
+            # two single photon emitters at 50% efficiency, 5ns lifetime and 1000ns time between pulse
+            first_emitter_times = calc_detection_times(5000, 0.5, 5, 1000)
+            second_emitter_times = calc_detection_times(5000, 0.5, 5, 1000)
 
-    # two single photon emitters at 90% efficiency, 10ns lifetime and 100ns time between pulse
-    first_emitter_times = calc_detection_times(5000, 0.90, 10, 100)
-    second_emitter_times = calc_detection_times(5000, 0.90, 10, 100)
-    detection_times = np.sort(np.concat([first_emitter_times, second_emitter_times]))
+    if num >= 2:
+        detection_times = np.sort(
+            np.concat([first_emitter_times, second_emitter_times])
+        )
+
     detectors = split_detections(detection_times)
-    taus = calc_taus(detectors, 500)
+    taus = calc_taus(detectors, 5000)
     plot_coincidence_events(taus, 500)
