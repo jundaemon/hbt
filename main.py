@@ -21,7 +21,7 @@ def split_detections(detection_times: np.ndarray) -> list[np.ndarray]:
 
 def calc_taus(detectors: list[np.ndarray], half_window_ns: int) -> np.ndarray:
     # preallocating a generous array so the underlying array doesn't need to constantly resize
-    taus = np.zeros(len(detectors[0]) ** 2)
+    taus = np.zeros(len(detectors[0]) * 50)
     curr_len = 0
     for t_a in detectors[0]:
         start = np.searchsorted(detectors[1], t_a - half_window_ns)
@@ -44,11 +44,11 @@ def plot_coincidence_events(taus: np.ndarray, bins: int) -> None:
 
 if __name__ == "__main__":
     # two single photon emitters at 50% efficiency, 5ns lifetime and 1000ns time between pulse
-    first_emitter_times = calc_detection_times(5000, 0.5, 5, 1000)
-    second_emitter_times = calc_detection_times(5000, 0.5, 5, 1000)
+    first_emitter_times = calc_detection_times(500_000, 1, 3, 50)
+    second_emitter_times = calc_detection_times(500_000, 1, 3, 50)
 
     detection_times = np.sort(np.concat([first_emitter_times, second_emitter_times]))
 
     detectors = split_detections(detection_times)
-    taus = calc_taus(detectors, 5000)
-    plot_coincidence_events(taus, 500)
+    taus = calc_taus(detectors, 1000)
+    plot_coincidence_events(taus, 10000)
