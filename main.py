@@ -1,17 +1,21 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
+PULSES = 500_000
+INTERVAL_NS = 50
 
-def calc_detection_times(
-    pulses: int, efficiency: float, lifetime_ns: int, interval_ns: int
-) -> np.ndarray:
-    # on each pulse, the probability of emitting a photon is modelled by efficiency
-    # this just returns the 0 indexed indices of pulses that led to emittance
-    pulse_times = np.flatnonzero(np.random.rand(pulses) < efficiency) * interval_ns
 
-    # the time at which photons are emitted is modelled by exponential decay
-    emission_times = np.log(np.random.rand(len(pulse_times))) * -lifetime_ns
-    return pulse_times + emission_times
+def calc_detection_times(efficiency: float, lifetime_ns: int) -> np.ndarray:
+    emission_duration = np.log(np.random.rand(PULSES)) * -lifetime_ns
+    if efficiency == 1.0:
+        return (np.arange(0, PULSES) * INTERVAL_NS) + emission_duration
+    else:
+        return (
+            np.cumsum(
+                np.floor(np.log(np.random.rand(PULSES)) / np.log(1 - efficiency)) + 1
+            )
+            * INTERVAL_NS
+        ) + emission_duration
 
 
 def split_detections(detection_times: np.ndarray) -> list[np.ndarray]:
@@ -20,18 +24,19 @@ def split_detections(detection_times: np.ndarray) -> list[np.ndarray]:
 
 
 def calc_taus(detectors: list[np.ndarray], half_window_ns: int) -> np.ndarray:
-    # preallocating a generous array so the underlying array doesn't need to constantly resize
-    taus = np.zeros(len(detectors[0]) * 50)
-    curr_len = 0
-    for t_a in detectors[0]:
-        start = np.searchsorted(detectors[1], t_a - half_window_ns)
-        end = np.searchsorted(detectors[1], t_a + half_window_ns)
+    starts = np.searchsorted(detectors[1], detectors[0] - half_window_ns, side="left")
+    ends = np.searchsorted(detectors[1], detectors[0] + half_window_ns, side="right")
+    ranges = ends - starts
 
-        for t_b in detectors[1][start : end + 1]:
-            taus[curr_len] = t_a - t_b
-            curr_len += 1
+    taus = np.empty(ranges.sum())
+    taus_curr = 0
+    for i, t_1 in enumerate(detectors[0]):
+        taus[taus_curr : taus_curr + ranges[i]] = (
+            t_1 - detectors[1][starts[i] : ends[i]]
+        )
+        taus_curr += ranges[i]
 
-    return taus[:curr_len]
+    return taus
 
 
 def plot_coincidence_events(taus: np.ndarray, bins: int) -> None:
@@ -43,12 +48,10 @@ def plot_coincidence_events(taus: np.ndarray, bins: int) -> None:
 
 
 if __name__ == "__main__":
-    # two single photon emitters at 50% efficiency, 5ns lifetime and 1000ns time between pulse
-    first_emitter_times = calc_detection_times(500_000, 1, 3, 50)
-    second_emitter_times = calc_detection_times(500_000, 1, 3, 50)
-
+    first_emitter_times = calc_detection_times(0.9, 3)
+    second_emitter_times = calc_detection_times(0.9, 3)
     detection_times = np.sort(np.concat([first_emitter_times, second_emitter_times]))
-
     detectors = split_detections(detection_times)
     taus = calc_taus(detectors, 1000)
+
     plot_coincidence_events(taus, 10000)
