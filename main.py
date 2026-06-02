@@ -54,7 +54,7 @@ def g2_zero_calc(taus: np.ndarray, T_ns: int, bins: int) -> np.float64:
     side_crests_i = side_crests_i[mask]
 
     areas = np.empty(len(side_crests_i))
-    for i, side_trough_i in enumerate(side_crests_i - int(bins_per_pulse / 2)):
+    for i, side_trough_i in enumerate(side_crests_i - bins_per_pulse // 2):
         areas[i] = hist[side_trough_i : side_trough_i + bins_per_pulse].sum()
 
     zero_trough_i = len(hist) // 2 - bins_per_pulse // 2
