@@ -2,7 +2,7 @@ import time
 
 import numpy as np
 from matplotlib import pyplot as plt
-from scipy.signal import find_peaks, peak_widths
+from scipy.signal import find_peaks
 
 
 def t_calc(
@@ -41,23 +41,24 @@ def tau_calc(sets_t: list[np.ndarray], half_window_ns: int) -> np.ndarray:
 
 
 def g2_zero_calc(taus: np.ndarray, T_ns: int, bins: int) -> np.float64:
-    # TODO: exclude area around tau = 0 when finding peaks, then dynamically find peak at tau = 0
     hist, edges = np.histogram(taus, bins)
-    bin_width = edges[1] - edges[0]
+    bins_per_pulse = int(T_ns / (edges[1] - edges[0]))
 
-    indices, _ = find_peaks(
+    side_crests_i, _ = find_peaks(
         hist,
-        distance=int(T_ns / bin_width * 0.8),
-        prominence=hist.max() * 0.1,
+        distance=int(bins_per_pulse * 0.9),
+        prominence=hist.max() * 0.8,
     )
-    _, _, lefts, rights = peak_widths(hist, indices)
+    mask = np.ones(len(side_crests_i), bool)
+    mask[[0, -1]] = False
+    side_crests_i = side_crests_i[mask]
 
-    areas = np.empty(len(lefts))
-    for i, left, right in zip(range(len(lefts)), lefts.astype(int), rights.astype(int)):
-        areas[i] = (hist[left : right + 1] * bin_width).sum()
+    areas = np.empty(len(side_crests_i))
+    for i, side_trough_i in enumerate(side_crests_i - int(bins_per_pulse / 2)):
+        areas[i] = hist[side_trough_i : side_trough_i + bins_per_pulse].sum()
 
-    tau_0_i = len(areas) // 2
-    return areas[tau_0_i] / areas[np.arange(0, len(areas)) != tau_0_i].mean()
+    zero_trough_i = len(hist) // 2 - bins_per_pulse // 2
+    return hist[zero_trough_i : zero_trough_i + bins_per_pulse].sum() / areas.mean()
 
 
 def plot_coincidence_events(taus: np.ndarray, bins: int) -> None:
