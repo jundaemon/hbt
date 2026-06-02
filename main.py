@@ -1,5 +1,5 @@
+import math
 import time
-from math import floor
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -43,11 +43,11 @@ def tau_calc(sets_t: list[np.ndarray], half_window_ns: int) -> np.ndarray:
 
 def g2_zero_calc(taus: np.ndarray, T_ns: int, bins: int) -> np.float64:
     hist, edges = np.histogram(taus, bins)
-    bins_per_pulse = floor(T_ns / (edges[1] - edges[0]))
+    bins_per_pulse = math.floor(T_ns / (edges[1] - edges[0]))
 
     side_crests_i, _ = find_peaks(
         hist,
-        distance=floor(bins_per_pulse * 0.9),
+        distance=math.floor(bins_per_pulse * 0.9),
         prominence=hist.max() * 0.8,
     )
     mask = np.ones(len(side_crests_i), bool)
