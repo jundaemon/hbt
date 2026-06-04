@@ -94,8 +94,8 @@ def run_generation() -> None:
         "Seed used": np.full(data_points, SEED, np.int64),
         "Lifetime (ns)": np.full(data_points, LIFETIME_NS, np.float64),
         "Time between pulses (ns)": np.full(data_points, T_NS, np.float64),
-        "Efficiency of emitter 1": np.empty(data_points, np.float64),
-        "Efficiency of emitter 2": np.empty(data_points, np.float64),
+        "Efficiency of medium 1": np.empty(data_points, np.float64),
+        "Efficiency of medium 2": np.empty(data_points, np.float64),
         "Detections at detector 1": np.empty(data_points, np.int64),
         "Detections at detector 2": np.empty(data_points, np.int64),
         "g2": np.empty(data_points, np.float64),
@@ -123,8 +123,8 @@ def run_generation() -> None:
             total_time_s += end - start
 
             results["g2"][idx] = g2_zero
-            results["Efficiency of emitter 1"][idx] = eff_1
-            results["Efficiency of emitter 2"][idx] = eff_2
+            results["Efficiency of medium 1"][idx] = eff_1
+            results["Efficiency of medium 2"][idx] = eff_2
             results["Detections at detector 1"][idx] = len(sets_t[0])
             results["Detections at detector 2"][idx] = len(sets_t[1])
 
