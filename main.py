@@ -3,7 +3,6 @@ import time
 
 import numpy as np
 from matplotlib import pyplot as plt
-from scipy.signal import find_peaks
 
 
 def t_calc(
@@ -45,12 +44,21 @@ def g2_zero_calc(taus: np.ndarray, T_ns: int, bins: int) -> np.float64:
     hist, edges = np.histogram(taus, bins)
     bins_per_pulse = math.floor(T_ns / (edges[1] - edges[0]))
 
-    side_crests_i, _ = find_peaks(
-        hist,
-        distance=math.floor(bins_per_pulse * 0.9),
-        prominence=hist.max() * 0.8,
+    side_crests_i = (
+        np.where(
+            (hist[1:-1] > hist[2:])
+            & (hist[1:-1] > hist[:-2])
+            & (hist[1:-1] > hist.max() * 0.95)
+        )[0]
+        + 1
     )
-    mask = np.ones(len(side_crests_i), bool)
+    side_crests_i = side_crests_i[
+        np.insert(
+            np.abs(np.diff(side_crests_i)) > math.floor(bins_per_pulse * 0.95), 0, True
+        )
+    ]
+
+    mask = np.full(len(side_crests_i), True)
     mask[[0, -1]] = False
     side_crests_i = side_crests_i[mask]
 
