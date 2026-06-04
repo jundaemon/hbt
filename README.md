@@ -47,7 +47,7 @@ This function calculates a series of timestamps when photons are detected at a d
 
 Photons are not immediately emitted when the medium is pulsed with a laser. Instead, the time taken for photon emission is modelled by exponential distribution, $P(t) = e^{-\frac{t}{\tau}}$, where $\tau$ is the lifetime of an electron. Solving for $t$, $t = -\tau \cdot \ln(U)$, where $U$ is arbitrary in the range $[0, 1)$. The first line of this function thus calculates the time taken for photon emission after a laser pulse for all photons.
 
-Photons are not necassarily guaranteed to be emitted after a laser pulse, this is instead determined by the efficiency of the medium. If the efficiency of the medium is 1 in the range $(0, 1]$, then photons are guaranteed to be emitted. We thus add the emission duration to the period of the pulse multiplied with the index of the photon for all photons and return it. But if the efficiency of the medium is less than 1, then the emission of a photon is not guaranteed for each pulse. The naive way to handle this would be to loop until the set is full and for each iteration, compare a randomly generated number with the efficiency of the medium, if it is lower, add the timestamp to the set and continue. Such an approach would look like
+Photons are not necassarily guaranteed to be emitted after a laser pulse, this is instead determined by the efficiency of the medium. If the efficiency of the medium is 1 in the range $(0, 1]$, then photons are guaranteed to be emitted. Thus, add the emission duration to the period of the pulse multiplied with the index of the photon for all photons and return it. But if the efficiency of the medium is less than 1, then the emission of a photon is not guaranteed for each pulse. The naive way to handle this would be to loop until the set is full and for each iteration, compare a randomly generated number with the efficiency of the medium, if it is lower, add the timestamp to the set and continue. Such an approach would look like
 
 ```python
 set_t = np.empty(exp_N)
@@ -58,7 +58,7 @@ while i < exp_N:
         i += 1
 ```
 
-This is terribly slow, we are iterating more than $n$ times for an $n$ sized array, not to mention the generation of a random number for each iteration. To combat this, we use a geometric distribution to determine the number of pulses needed for a successful photon emission, based on the efficiency of the medium. The number of pulses needed for a successful photon emission is modelled by $P(k) = 1 - (1 - eff)^k$. Solving for $k$, $k = \frac{\ln(1 - U)}{\ln(1 - eff)}$, where $U$ is arbitrary in range $[0, 1)$. `np.cumsum(np.floor(np.log(rng.random(exp_N)) / np.log(1 - eff)) + 1)` thus calculates the indexes where a pulse leads to a successful photon emission. The result is then multiplied with the period of pulse, the duration of emission is then added at the end.
+This is terribly slow, the program is iterating more than $n$ times for an $n$ sized array, not to mention the generation of a random number for each iteration. To combat this, a geometric distribution is used to determine the number of pulses needed for a successful photon emission, based on the efficiency of the medium. The number of pulses needed for a successful photon emission is modelled by $P(k) = 1 - (1 - eff)^k$. Solving for $k$, $k = \frac{\ln(1 - U)}{\ln(1 - eff)}$, where $U$ is arbitrary in range $[0, 1)$. `np.cumsum(np.floor(np.log(rng.random(exp_N)) / np.log(1 - eff)) + 1)` thus calculates the indexes where a pulse leads to a successful photon emission. The result is then multiplied with the period of pulse, the duration of emission is then added at the end.
 
 ### t_split
 
@@ -93,7 +93,7 @@ def tau_calc(sets_t: list[np.ndarray], half_window_ns: float) -> np.ndarray:
     )
 ```
 
-$\tau$ refers to the time difference between an arrival time of a photon at detector 1 and an arrival time of a photon at detector 2. In this simulation, we calculate $\tau$s within a time window of an arrival time of a photon at detector 1. Meaning if a `half_window_ns` is a 1000 ns and an arrival time at detector 1 is 5000 ns, then the arrival times at detector 2 which would be used for $\tau$ calculation is in the range $[4000, 6000]$. This is achieved using `np.searchsorted` to find the lower and upper bounds of windows within arrival times at detector 2. We then use these lower and upper bounds of windows in vectorized calculations of $\tau$.
+$\tau$ refers to the time difference between an arrival time of a photon at detector 1 and an arrival time of a photon at detector 2. In this simulation, $\tau$s are calculated within a time window of an arrival time of a photon at detector 1. Meaning if a `half_window_ns` is a 1000 ns and an arrival time at detector 1 is 5000 ns, then the arrival times at detector 2 which would be used for $\tau$ calculation is in the range $[4000, 6000]$. This is achieved using `np.searchsorted` to find the lower and upper bounds of windows within arrival times at detector 2. The lower and upper bounds of windows are then used in vectorized calculations of $\tau$.
 
 ```python
 np.repeat(starts, ranges)
