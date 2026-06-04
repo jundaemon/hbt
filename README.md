@@ -26,6 +26,17 @@ Run the program and you should get an excel sheet with generated values
 uv run main.py
 ```
 
+## Benchmarks
+
+An average of 0.21s for:
+1) Creation of 2, dynamically calculated, size 500_000 Numpy arrays
+2) Concatenating and sorting 1_000_000 elements
+3) 50-50 Numpy array split
+4) Worst case of ~20_000_000 $\tau$ calculations
+5) Histogram creation
+6) Peak finding
+7) Second order correlation calculation
+
 ## Core calculations walkthrough
 
 ### t_calc
@@ -93,7 +104,7 @@ def tau_calc(sets_t: list[np.ndarray], half_window_ns: float) -> np.ndarray:
     )
 ```
 
-$\tau$ refers to the time difference between an arrival time of a photon at detector 1 and an arrival time of a photon at detector 2. In this simulation, $\tau$s are calculated within a time window of an arrival time of a photon at detector 1. Meaning if a `half_window_ns` is a 1000 ns and an arrival time at detector 1 is 5000 ns, then the arrival times at detector 2 which would be used for $\tau$ calculation is in the range $[4000, 6000]$. This is achieved using `np.searchsorted` to find the lower and upper bounds of windows within arrival times at detector 2. The lower and upper bounds of windows are then used in vectorized calculations of $\tau$.
+$\tau$ refers to the time difference between an arrival time of a photon at detector 1 and an arrival time of a photon at detector 2. In this simulation, $\tau$ are calculated within a time window of an arrival time of a photon at detector 1. Meaning if a `half_window_ns` is a 1000 ns and an arrival time at detector 1 is 5000 ns, then the arrival times at detector 2 which would be used for $\tau$ calculation is in the range $[4000, 6000]$. This is achieved using `np.searchsorted` to find the lower and upper bounds of windows within arrival times at detector 2. The lower and upper bounds of windows are then used in vectorized calculations of $\tau$.
 
 ```python
 np.repeat(starts, ranges)
@@ -114,4 +125,71 @@ result = (
 )
 ```
 
-Using this result to index into detector 2's arrival times and subtracting these arrival times from the corresponding arrival time at detector 1 will thus lead to all $\tau$s.
+Using this result to index into detector 2's arrival times and subtracting these arrival times from the corresponding arrival time at detector 1 will thus lead to all $\tau$.
+
+### g2_zero_calc
+
+```python
+def g2_zero_calc(taus: np.ndarray, T_ns: float, bins: int) -> np.float64:
+    hist, edges = np.histogram(taus, bins)
+    bins_per_pulse = math.floor(T_ns / (edges[1] - edges[0]))
+
+    side_crests_i = (
+        np.where(
+            (hist[1:-1] > hist[2:])
+            & (hist[1:-1] > hist[:-2])
+            & (hist[1:-1] > hist.max() * 0.9)
+        )[0]
+        + 1
+    )
+    side_crests_i = side_crests_i[
+        np.insert(np.diff(side_crests_i) > math.floor(bins_per_pulse * 0.9), 0, True)
+    ]
+
+    mask = np.full(len(side_crests_i), True)
+    mask[[0, -1]] = False
+    side_crests_i = side_crests_i[mask]
+
+    areas = np.empty(len(side_crests_i))
+    for i, side_trough_i in enumerate(side_crests_i - bins_per_pulse // 2):
+        areas[i] = hist[side_trough_i : side_trough_i + bins_per_pulse].sum()
+
+    zero_trough_i = len(hist) // 2 - bins_per_pulse // 2
+    return hist[zero_trough_i : zero_trough_i + bins_per_pulse].sum() / areas.mean()
+```
+
+To calculate the second order correlation at $\tau$ = 0, $g^{2}(0)$, the $\tau$ are first binned in a histogram, the peaks in the histogram are then found, including the peak at $\tau$ = 0. $g^{2}(0)$ is then calculated by dividing the area of peak at $\tau$ = 0 with the average area of side peaks. For some context, here is what a typical $\tau$ to coincidence events graph looks like
+
+![image](./graph.png)
+
+After binning taus using `np.histogram(taus, bins)` and calculating `bins_per_pulse` using the resulting edges, array shifts were used to find peaks within the histogram. If a bin in a histogram is larger than itself when it is shifted right and left by a bin, then that point might be a peak. This is only a means of reducing the search space, a large number of bins will likely satisfy this requirement and thus using this check alone is not suitable for definitively finding all peaks in the histogram. Fortunately, it can be seen that peaks have a minimum height and are equally spaced. Further constraints on peak criteria were thus formulated, they would have to have a height that is at least 90% of the maximum and peaks have to have at least 90% of `bins_per_pulse` between each other. This meant that the peak at $\tau$ = 0 would not be found using this method, but that isn't a problem because $\tau$ = 0 always has its peak in the centre bin.
+
+It can also be seen that the left and right most peaks will not always be fully formed, as such the array of indexes of peaks found will have the first and last indexes removed. Once the indexes of full peaks are found, it was just a matter of finding the mean of their areas and dividing the area of peak at $\tau$ = 0 with this result.
+
+## Possible improvements
+Initially, I wasn't writing the program with [Numba](https://numba.pydata.org/) compilation in mind. In hindsight, I wish I did because then I could parallelize the entire generation.
+
+```python
+@njit(parallel=True)
+def wrappee(eff_1, effs):
+    g2_zeros = np.empty(len(effs))
+    i = 0
+    for eff_2 in effs:
+        # do calculations with both efficiencies
+
+        g2_zeros[i] = g2_zero
+        i += 1
+
+    return g2_zeros
+
+@njit(parallel=True)
+def wrapper():
+    effs = np.linspace(0.1, 1.0, 10, True)
+    g2_zeros = np.empty(len(effs) ** 2)
+    for eff_1 in effs:
+        np.concat([g2_zeros, wrappee(eff_1, effs)])
+
+    return g2_zeros
+```
+
+With Numba compilation, I could essentially flatten the nested loop currently in `run_generation` (I think, the above implementation looks possible from the documentation, correct me if I am wrong). That would be an endeavour for another time.
