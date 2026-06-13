@@ -1,5 +1,5 @@
 ## Introduction
-This is a program that runs a Monte Carlo simulation of the [Hanbury Brown & Twiss experiment](https://en.wikipedia.org/wiki/Hanbury_Brown_and_Twiss_effect). It also doubles as a synthetic data generator for the second order correlation function which will be used in my final year project.
+This is a program that runs a Monte Carlo simulation of the [Hanbury Brown & Twiss experiment](https://en.wikipedia.org/wiki/Hanbury_Brown_and_Twiss_effect).
 
 ## Prerequisites
 - Have a [Python](https://www.python.org/downloads/) interpreter installed, code works on version 3.14.
