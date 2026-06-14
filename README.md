@@ -1,5 +1,5 @@
 ## Introduction
-This is a program that runs a Monte Carlo simulation of the [Hanbury Brown & Twiss experiment](https://en.wikipedia.org/wiki/Hanbury_Brown_and_Twiss_effect).
+This is a program that runs a Monte Carlo simulation of the [Hanbury Brown & Twiss experiment](https://en.wikipedia.org/wiki/Hanbury_Brown_and_Twiss_effect). It simulates a nitrogen vacancy center pulsed with a laser at a set frequency, with a chance of emitting 0, 1 or 2 photons at each pulse.
 
 ## Prerequisites
 - Have a [Python](https://www.python.org/downloads/) interpreter installed, code works on version 3.14.
@@ -28,7 +28,7 @@ uv run main.py
 
 ## Benchmarks
 
-An average of 0.21s for:
+An average of 0.21s for the:
 1) Creation of 2, dynamically calculated, size 500_000 Numpy arrays
 2) Concatenating and sorting 1_000_000 elements
 3) 50-50 Numpy array split
